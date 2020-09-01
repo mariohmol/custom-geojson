@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>App</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="me"
+  href="https://twitter.com/twitterdev"
+>
+<link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="mat-typography">
+
+  <h1>Customiz your GeoJson or TopoJson file</h1>
+  <form id="filter">
+
+    <h2>Source Json URL</h2>
+    <input required type="url" name="url" placeholder="Link to the geojson or topojson file">
+    <small>Link example: https://raw.githubusercontent.com/Irio/br-atlas/master/geo/ac-municipalities.json</small>
+
+    <h2>Filter by</h2>
+    <label for="points">Reduce lat/lng points</label>
+    <input type="number" name="points" value="1" placeholder="Reduce points by (1 is no reduce, 2 is by half..">
+
+    <label for="points">Reduce precistion of lat/lng</label>
+    <input type="number" name="precision" value="5" placeholder="Lat and Long precision">
+    <button>Update</button>
+  </form>
+
+  <section class="results">
+    <h2>Map Results</h2>
+
+    <button id="dowload">Click here to Download</button>
+    <div id="container"></div>
+  </section>
+
+  
+
+
+  <script src="/d3.min.js"></script>
+  <!-- <script src="/d3plus-geomap.v0.7.full.min.js"></script> -->
+
+  <script src="https://d3js.org/d3-array.v2.min.js"></script>
+<script src="https://d3js.org/d3-geo.v2.min.js"></script>
+  <script src="/topojson.v1.min.js"></script>
+  <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
+  <script src="/index.js"></script>
+</body>
+</html>
