@@ -1,3 +1,7 @@
 .hidden{
     display: none;
 }
+
+.fullwidth{
+    width: 100%;
+}

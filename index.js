@@ -1,5 +1,7 @@
 const STORE = {
-  json: null
+  json: null,
+  originalJSON: null,
+  url: null
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -14,20 +16,38 @@ function submitEvent(e) {
   const url = e.target.url.value;
   const points = e.target.points.value;
   const precision = e.target.precision.value;
-  main(url, points, precision)
+  const strategy = e.target.strategy.value;
+
+
+  main(url, points, precision, strategy)
 }
 
-function main(url, points, precision) {
+function main(url, points, precision, strategy) {
+
+  const div = '#container';
+
+  d3.select(div).html('Loading resources...')
+
+  if (STORE.url === url) {
+    const json = JSON.parse(STORE.originalJSON);
+    execute(div, json, precision, points, strategy)
+    return
+  }
 
   d3.json(url, function (error, json) {
     console.log(url)
     if (error) throw error;
-
-    json.features = makeReduction(json.features, precision, points)
-    console.log(json.features[0].geometry.coordinates);
-    STORE.json = json;
-    makeChart('#container', STORE.json);
+    STORE.url = url;
+    STORE.originalJSON = JSON.stringify(json);
+    execute(div, json, precision, points, strategy)
   })
+}
+
+function execute(div, json, precision, points, strategy) {
+  json.features = makeReduction(json.features, precision, points, strategy)
+  console.log(json.features[0].geometry.coordinates);
+  STORE.json = json;
+  makeChart(div, STORE.json);
 }
 
 
@@ -48,55 +68,30 @@ function downloadObjectAsJson(exportObj, exportName) {
 
 
 
-function makeReduction(features, precision = 5, reduce = 10) {
+function makeReduction(features, precision = 5, reduce = 10, strategy = 'mean') {
   return features.map(f => {
     let coordinatesNew = coordinates = f.geometry.coordinates[0];
 
-    let skip = 1;
-    let lat = [];
-    let lng = [];
-
-    // Middle
-
-    if (reduce > 1) {
-      coordinatesNew = []
-      coordinates.forEach(c => {
-
-        lat.push(c[0])
-        lng.push(c[1])
-
-        if (skip == reduce) {
-          skip = 0;
-          lat = lat.sort((a, b) => a > b ? 1 : -1)
-          lng = lng.sort((a, b) => a > b ? 1 : -1)
-          coordinatesNew.push([
-            lat[1],
-            lng[1]
-          ]);
-          lat = [];
-          lng = [];
-
-        }
-        skip++;
-      })
+    if (strategy == 'distance') {
+      coordinatesNew = distanceStrategy(coordinates, reduce)
+    } else if (reduce > 1 && coordinates.length > reduce * 10) {
+      if (strategy == 'avg') {
+        coordinatesNew = avgStrategy(coordinatesNew, reduce);
+      } else if (strategy == 'mean') {
+        coordinatesNew = meanStrategy(coordinatesNew, reduce);
+      } else if (strategy == 'skip') {
+        coordinatesNew = skipStrategy(coordinates, reduce)
+      }
+      else {
+        coordinatesNew = modeStrategy(coordinatesNew, reduce);
+      }
     }
-
-    // AVG
-    // coordinates.forEach(c => {
-    //   lat += c[0];
-    //   lng += c[1];
-    //   if (skip == 3) {
-    //     skip = 0;
-    //     coordinatesNew.push([
-    //       lat / 3,
-    //       lng / 3
-    //     ])
-    //   }
-    //   skip++;
-    // })
 
     if (precision > 1) {
       coordinatesNew = coordinatesNew.map(c => {
+        if (!c[0] || !c[1] || !c[0].toPrecision || !c[1].toPrecision) {
+          return c;
+        }
         return [
           parseFloat(c[0].toPrecision(precision)),
 
@@ -107,6 +102,125 @@ function makeReduction(features, precision = 5, reduce = 10) {
     f.geometry.coordinates[0] = coordinatesNew;
     return f;
   });
+}
+
+
+function skipStrategy(coordinates, reduce) {
+  let skip = 1;
+  coordinatesNew = []
+  coordinates.forEach(c => {
+    if (skip == reduce) {
+      skip = 0;
+      coordinatesNew.push([
+        c[0],
+        c[1]
+      ]);
+    }
+    skip++;
+  })
+  return coordinatesNew;
+}
+
+
+function distanceStrategy(coordinates, reduce) {
+  let skip = 1;
+  let previous;
+  coordinatesNew = []
+  coordinates.forEach(c => {
+    if (!previous) {
+      previous = c;
+      coordinatesNew.push(c);
+      return
+    }
+    const latDiff = Math.abs(c[0] - previous[0]);
+    const lonDiff = Math.abs(c[1] - previous[1]);
+
+    if (latDiff > reduce || lonDiff > reduce) {
+      coordinatesNew.push(c);
+    } else {
+      skip++;
+    }
+
+  })
+  return coordinatesNew;
+}
+
+
+
+
+function modeStrategy(coordinates, reduce) {
+  let skip = 1;
+  let lat = [];
+  let lng = [];
+  coordinatesNew = []
+
+  coordinates.forEach(c => {
+
+    lat.push(c[0])
+    lng.push(c[1])
+    const middle = reduce / 2;
+    if (skip == reduce) {
+      skip = 0;
+      coordinatesNew.push([
+        lat[middle],
+        lng[middle]
+      ]);
+      lat = [];
+      lng = [];
+
+    }
+    skip++;
+  })
+  return coordinatesNew;
+}
+
+
+
+function avgStrategy(coordinates, reduce) {
+  let skip = 1;
+  let lat = [];
+  let lng = [];
+  coordinatesNew = []
+  coordinates.forEach(c => {
+    lat += c[0];
+    lng += c[1];
+    if (skip == reduce) {
+      skip = 0;
+      coordinatesNew.push([
+        lat / reduce,
+        lng / reduce
+      ])
+    }
+    skip++;
+  })
+  return coordinatesNew
+}
+
+function meanStrategy(coordinates, reduce) {
+  let skip = 1;
+  let lat = [];
+  let lng = [];
+  coordinatesNew = []
+  coordinates.forEach(c => {
+
+    lat.push(c[0])
+    lng.push(c[1])
+    const middle = reduce / 2;
+    if (skip == reduce) {
+      skip = 0;
+      lat = lat.sort((a, b) => a > b ? 1 : -1)
+      lng = lng.sort((a, b) => a > b ? 1 : -1)
+      coordinatesNew.push([
+        lat[middle],
+        lng[middle]
+      ]);
+      lat = [];
+      lng = [];
+
+    }
+    skip++;
+  })
+  return coordinatesNew;
 }
 
 function makeChart(div, json) {

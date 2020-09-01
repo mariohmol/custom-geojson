@@ -18,15 +18,27 @@
   <form id="filter">
 
     <h2>Source Json URL</h2>
-    <input required type="url" name="url" placeholder="Link to the geojson or topojson file">
+    <input class="fullwidth" required type="url" name="url" 
+    value="https://raw.githubusercontent.com/Irio/br-atlas/master/geo/ba-municipalities.json"
+    placeholder="Link to the geojson or topojson file">
     <small>Link example: https://raw.githubusercontent.com/Irio/br-atlas/master/geo/ac-municipalities.json</small>
 
     <h2>Filter by</h2>
     <label for="points">Reduce lat/lng points</label>
-    <input type="number" name="points" value="1" placeholder="Reduce points by (1 is no reduce, 2 is by half..">
-
-    <label for="points">Reduce precistion of lat/lng</label>
+    <input type="text" name="points" value="1" placeholder="Reduce points by (1 is no reduce, 2 is by half..">
+    <br/>
+    <label for="precision">Reduce precistion of lat/lng</label>
     <input type="number" name="precision" value="5" placeholder="Lat and Long precision">
+    <br/>
+    <label for="strategy">Strategy <small>How to merge LATLNG points</small></label>
+    <select name="strategy" >
+      <option value="mean">mean</option>
+      <option value="skip">skip</option>
+      <option value="mode">mode</option>
+      <option value="distance">distance</option>
+      <option value="avg">avg (beta)</option>
+    </select>
+    <br/>
     <button>Update</button>
   </form>
 
